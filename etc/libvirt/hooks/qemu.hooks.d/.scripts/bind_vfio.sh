@@ -13,7 +13,7 @@ function log {
 # Notify user on error, log, and exit
 function error_exit {
 	log "ERROR: $1"
-	send-to $NOTIFY_USER -u critical "VM Start Error" "$1"
+	send-to -u critical "VM Start Error" "$1"
 	exit 1
 }
 
@@ -61,5 +61,5 @@ modprobe vfio_iommu_type1 || error_exit "Failed to load vfio_iommu_type1 module"
 log "VFIO modules successfully loaded."
 
 # Notify successful GPU preparation
-send-to $NOTIFY_USER "VM Start" "dGPU successfully passed to the VM $1"
+send-to "VM Start" "dGPU successfully passed to the VM $1"
 log "GPU passthrough to VM $1 preparation complete."

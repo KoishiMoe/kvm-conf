@@ -27,7 +27,7 @@
     <iothreadpin iothread="1" cpuset="2-3"/>
   </cputune>
   <os firmware="efi">
-    <type arch="x86_64" machine="pc-q35-9.0">hvm</type>
+    <type arch="x86_64" machine="pc-q35-10.2">hvm</type>
     <firmware>
       <feature enabled="no" name="enrolled-keys"/>
       <feature enabled="no" name="secure-boot"/>

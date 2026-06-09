@@ -2,6 +2,9 @@
 
 set -e
 
-systemctl set-property --runtime -- user.slice AllowedCPUs=0,1,2,3
-systemctl set-property --runtime -- system.slice AllowedCPUs=0,1,2,3
-systemctl set-property --runtime -- init.scope AllowedCPUs=0,1,2,3
+## Load the config file (HOST_CPUS lives here, not hardcoded below)
+source "/etc/libvirt/hooks/kvm.conf"
+
+systemctl set-property --runtime -- user.slice AllowedCPUs=$HOST_CPUS
+systemctl set-property --runtime -- system.slice AllowedCPUs=$HOST_CPUS
+systemctl set-property --runtime -- init.scope AllowedCPUs=$HOST_CPUS

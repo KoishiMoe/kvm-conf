@@ -1,49 +1,22 @@
 #!/bin/bash
-# notify-send-all, notify-send-to, notify-send-others
+# send-to: status reporter for the libvirt GPU-passthrough hooks.
 #
-#   Send a pop-up message to all users logged into a machine, asynchronously.
-#   Similar to the `wall` command, but for graphical logins (X & Wayland).
-#   Results from --action are prefixed with the username and a TAB.
-#   Requires notify-send, dbus.
+# The original helper ran `sudo -u <user> notify-send` to pop a desktop
+# notification. Libvirt runs hooks inside the virtqemud_t SELinux domain, so
+# that `sudo` forced virtqemud_t to exec sudo/unix_chkpwd and read /etc/shadow,
+# contact logind, and connect to the user session bus — a pile of denials and a
+# genuine privilege-escalation smell for a root hook.
 #
-# CC-0 2023 hackerb9, inspired by @andy on the Unix & Linux StackExchange.
-
-PATH=/usr/bin:/bin
+# We don't need a popup to know a VM (un)bound the GPU. Write to stderr instead:
+# libvirt captures hook stderr into the daemon journal, so messages land in
+#   journalctl -u virtqemud -t <vm>
+# with no sudo, no /etc/shadow, no cross-domain D-Bus — i.e. no SELinux holes.
+#
+# Signature (the leading <user> arg is gone now that NOTIFY_USER was dropped):
+#   send-to [-u <urgency>] <summary> <body...>
 
 send-to() {
-	local name busroute
-	name="$1"
-	shift
-	busroute="/run/user/$(id -u "$name")/bus" || return 1
-	if sudo -u "$name" -- /bin/test -e "$busroute"; then
-		sudo -u "$name" \
-			PATH="$PATH" \
-			DBUS_SESSION_BUS_ADDRESS="unix:path=$busroute" \
-			-- \
-			notify-send "$@" 2>&1 |
-			sed "s/^/$name\t/"
-	else
-		echo -e "$name\tERROR: No such file $busroute" >&2
-		return 1
-	fi
+	if [ "${1:-}" = "-u" ]; then shift 2; fi   # drop an optional notify-send "-u <urgency>"
+	local summary="${1:-}"; shift || true
+	printf 'gpu-passthrough: %s: %s\n' "$summary" "$*" >&2
 }
-
-# Notes
-# * Works in Wayland and X (as of 2023).
-# * Sends messages to all users asynchronously.
-# * Results from --action are prefixed with the username and a TAB.
-# * We test if the file "$DBUS_SESSION_BUS_ADDRESS" exists because
-#   otherwise `--wait` hangs forever. (libnotify-1.8.1 bug?)
-#
-# Bugs
-# * -?, --help only works if it is the first argument.
-#
-# * If a user is logged in on a console instead of a graphical session
-#   (X or Wayland), then `notify-send` hangs for a long time before
-#   timing out on StartServiceByName for org.freedesktop.Notifications.
-#   This seems to be a bug in libnotify-1.8.1.
-#
-#   This bug is also triggered when the user is logged in on both
-#   console and graphical sessions and logged into the console first.
-#   In that case, not only does notify-send hang, but notifications
-#   will not show up at all in the graphical session.

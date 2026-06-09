@@ -13,7 +13,7 @@ function log {
 # Notify user on error, log, and exit
 function error_exit {
 	log "ERROR: $1"
-	send-to $NOTIFY_USER -u critical "VM Cleanup Error" "$1"
+	send-to -u critical "VM Cleanup Error" "$1"
 	exit 1
 }
 
@@ -34,6 +34,13 @@ virsh nodedev-reattach pci_${GPU_PCI//[:.]/_} || error_exit "Failed to reattach 
 virsh nodedev-reattach pci_${AUDIO_PCI//[:.]/_} || error_exit "Failed to reattach GPU audio device"
 log "dGPU reattached to host"
 
+# Reset the GPU using nvidia-smi
+if nvidia-smi -r; then
+	log "GPU reset successful."
+else
+	error_exit "Failed to reset GPU using nvidia-smi."
+fi
+
 # Reload NVIDIA kernel modules
 modprobe nvidia || error_exit "Failed to load nvidia module"
 modprobe nvidia_modeset || error_exit "Failed to load nvidia_modeset module"
@@ -42,5 +49,5 @@ modprobe nvidia_drm || error_exit "Failed to load nvidia_drm module"
 log "nvidia modules successfully loaded"
 
 # Notify successful cleanup
-send-to $NOTIFY_USER "VM Cleanup" "VM $1 stopped and dGPU successfully reattached to the host"
+send-to "VM Cleanup" "VM $1 stopped and dGPU successfully reattached to the host"
 log "GPU passthrough to VM $1 cleanup complete."
