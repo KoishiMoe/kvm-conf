@@ -1,5 +1,5 @@
 #!/bin/bash
-# send-to: status reporter for the libvirt GPU-passthrough hooks.
+# report: status reporter for the libvirt GPU-passthrough hooks.
 #
 # The original helper ran `sudo -u <user> notify-send` to pop a desktop
 # notification. Libvirt runs hooks inside the virtqemud_t SELinux domain, so
@@ -13,9 +13,9 @@
 # with no sudo, no /etc/shadow, no cross-domain D-Bus — i.e. no SELinux holes.
 #
 # Signature (the leading <user> arg is gone now that NOTIFY_USER was dropped):
-#   send-to [-u <urgency>] <summary> <body...>
+#   report [-u <urgency>] <summary> <body...>
 
-send-to() {
+report() {
 	if [ "${1:-}" = "-u" ]; then shift 2; fi   # drop an optional notify-send "-u <urgency>"
 	local summary="${1:-}"; shift || true
 	printf 'gpu-passthrough: %s: %s\n' "$summary" "$*" >&2
